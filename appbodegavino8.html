@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virgen de la Estrella - App Móvil</title>
+    <!-- Etiquetas para App Nativa -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Librerías: Tailwind para diseño y Supabase para Base de Datos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        .fill-level { transition: height 1.5s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .stainless-steel { background: linear-gradient(to right, #b0b5b9 0%, #eef2f3 25%, #d4d7d9 50%, #eef2f3 75%, #a0a5a9 100%); }
+        .liquid-shadow { box-shadow: inset 10px 0 20px rgba(0,0,0,0.3), inset -10px 0 20px rgba(0,0,0,0.1); }
+        .glass-panel { background: rgba(28, 25, 23, 0.85); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-stone-100 min-h-screen font-sans text-stone-800 pb-10">
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen" class="fixed inset-0 bg-stone-900 z-50 flex flex-col justify-center items-center p-4">
+        <div class="bg-stone-50 p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-stone-200">
+            <div class="text-center mb-8">
+                <svg class="w-16 h-16 text-rose-800 mx-auto mb-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c0 0-7.5 9-7.5 14.5A7.5 7.5 0 0 0 12 24a7.5 7.5 0 0 0 7.5-7.5C19.5 11 12 2 12 2z"/></svg>
+                <h1 class="text-2xl font-black text-stone-800">Virgen de la Estrella</h1>
+                <p class="text-sm text-stone-500 font-medium mt-1">Acceso a Operarios</p>
+            </div>
+            
+            <div class="mb-5">
+                <label class="block text-sm font-bold text-stone-700 mb-2">Usuario</label>
+                <input type="text" id="login-user" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none bg-white font-medium" placeholder="Ej: jlgarcia">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-stone-700 mb-2">Contraseña</label>
+                <input type="password" id="login-pass" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none bg-white font-medium" placeholder="••••••••">
+            </div>
+            
+            <p id="login-error" class="text-red-600 text-sm font-bold mb-4 hidden text-center">Usuario o contraseña incorrectos</p>
+            
+            <button onclick="login()" class="w-full bg-rose-800 hover:bg-rose-900 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all">
+                Iniciar Sesión
+            </button>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="main-app" class="hidden">
+        <header class="bg-stone-900 text-stone-100 p-4 shadow-xl sticky top-0 z-30 border-b-4 border-rose-800">
+            <div class="container mx-auto flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-xl font-bold flex items-center gap-2">
+                        <svg class="w-6 h-6 text-rose-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c0 0-7.5 9-7.5 14.5A7.5 7.5 0 0 0 12 24a7.5 7.5 0 0 0 7.5-7.5C19.5 11 12 2 12 2z"/></svg>
+                        Virgen de la Estrella
+                    </h1>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-stone-300 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>
+                            <span id="display-user">Operario</span>
+                        </span>
+                        <button onclick="logout()" class="text-rose-400 hover:text-white p-1" title="Cerrar Sesión">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex bg-stone-800 rounded-lg p-1 w-full self-center border border-stone-700 shadow-inner">
+                    <button id="btn-grid" onclick="setView('grid')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-md bg-stone-600 text-white shadow transition-colors flex justify-center items-center gap-1 md:gap-2">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        3D
+                    </button>
+                    <button id="btn-list" onclick="setView('list')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-md text-stone-400 hover:text-white transition-colors flex justify-center items-center gap-1 md:gap-2">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        Lista
+                    </button>
+                    <button id="btn-history" onclick="setView('history')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-md text-stone-400 hover:text-white transition-colors flex justify-center items-center gap-1 md:gap-2">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Historial
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-8">
+            
+            <!-- CONTENEDOR BUSCADOR Y FILTROS -->
+            <div id="search-container" class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-stone-200 mb-6 flex flex-col md:flex-row gap-3 items-center">
+                <div class="relative flex-grow w-full">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Buscar depósito (ej. M-6)" class="w-full pl-10 pr-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-800 transition-colors bg-stone-50">
+                </div>
+                
+                <div class="flex gap-3 w-full md:w-auto">
+                    <select id="filter-select" onchange="applyFilters()" class="flex-1 md:flex-none px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-800 bg-stone-50 font-bold text-stone-700 text-sm">
+                        <option value="all">Todos los Vinos</option>
+                        <option value="vino_tinto">🍷 Solo Tinto</option>
+                        <option value="vino_blanco">🥂 Solo Blanco</option>
+                    </select>
+
+                    <div class="flex items-center gap-2 px-3 py-2.5 border border-stone-300 rounded-lg bg-stone-50 shrink-0">
+                        <input type="checkbox" id="filter-empty" onchange="applyFilters()" class="w-4 h-4 text-rose-800 border-stone-400 rounded focus:ring-rose-800">
+                        <label for="filter-empty" class="text-sm font-bold text-stone-700 cursor-pointer">Mostrar Vacíos</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTAS DE DATOS -->
+            <div id="view-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8"></div>
+            <div id="view-list" class="hidden flex flex-col gap-3 max-w-3xl mx-auto"></div>
+            
+            <!-- VISTA HISTORIAL -->
+            <div id="view-history" class="hidden flex flex-col gap-3 max-w-3xl mx-auto">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xl font-black text-stone-800">Registro de Movimientos</h2>
+                    <button id="btn-clear-history" onclick="clearHistory()" class="hidden text-xs text-red-600 hover:text-red-800 font-bold border border-red-200 bg-red-50 px-2 py-1 rounded transition-colors">Vaciar Historial</button>
+                </div>
+                <div id="history-list" class="flex flex-col gap-3"></div>
+            </div>
+
+            <div id="no-results" class="hidden text-center py-10">
+                <svg class="w-16 h-16 text-stone-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p class="text-stone-500 font-bold">No hay depósitos con esos filtros.</p>
+            </div>
+        </main>
+
+        <!-- MODAL DE EDICIÓN -->
+        <div id="edit-modal" class="fixed inset-0 bg-stone-900 bg-opacity-60 hidden z-50 transition-opacity backdrop-blur-sm">
+            <div class="absolute inset-0" onclick="closeModal()"></div>
+            
+            <div class="absolute bottom-0 left-0 right-0 bg-stone-50 rounded-t-3xl shadow-2xl flex flex-col max-h-[95vh] md:w-[450px] md:mx-auto md:top-10 md:bottom-auto md:rounded-b-3xl slide-up border border-stone-200">
+                <div class="bg-stone-800 text-white p-5 rounded-t-3xl flex justify-between items-start border-b border-stone-700">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h3 id="modal-title" class="font-black text-2xl text-rose-400">DEP</h3>
+                            <span id="modal-grado" class="bg-stone-700 text-stone-200 text-xs font-bold px-2 py-1 rounded">0% Vol.</span>
+                        </div>
+                        <p id="modal-subtitle" class="text-sm font-medium text-stone-300 mt-1">Producto</p>
+                    </div>
+                    <button onclick="closeModal()" class="text-stone-400 hover:text-white bg-stone-700 p-2 rounded-full transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto">
+                    <div class="mb-5 bg-white p-4 rounded-xl border border-stone-200 shadow-sm flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] font-bold text-stone-500 uppercase tracking-wide mb-1">Estado Anterior</p>
+                            <div class="flex items-baseline gap-2">
+                                <p id="modal-current-level" class="text-xl font-black text-stone-800">0 L</p>
+                                <p id="modal-current-grado" class="text-sm text-stone-500 font-medium">0% Vol.</p>
+                            </div>
+                        </div>
+                        <div id="modal-color-indicator" class="w-6 h-6 rounded-full shadow-inner border-2 border-stone-300"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-2">
+                        <div>
+                            <label class="block text-sm font-bold text-stone-700 mb-2">Nuevo Nivel (L)</label>
+                            <input type="number" id="input-level" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none text-xl font-black text-stone-800 text-center shadow-inner bg-stone-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-stone-700 mb-2">Nuevo Grado (%)</label>
+                            <input type="number" step="0.01" id="input-grado" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none text-xl font-black text-stone-800 text-center shadow-inner bg-stone-50">
+                        </div>
+                    </div>
+                    <p id="modal-capacity-info" class="text-[11px] font-bold text-stone-500 mb-5 text-center bg-stone-200 py-1 rounded"></p>
+
+                    <div class="mb-6 border-t border-stone-200 pt-5">
+                        <label class="block text-sm font-bold text-stone-700 mb-2">Tipo de Movimiento</label>
+                        <select id="input-action" class="w-full border border-stone-300 p-3 rounded-xl mb-4 font-medium text-stone-700 bg-white focus:border-rose-800 outline-none">
+                            <option value="Ajuste">Ajuste de inventario/grado</option>
+                            <option value="Entrada">Entrada de vino / Mosto</option>
+                            <option value="Trasiego">Salida / Trasiego</option>
+                            <option value="Envasado">Envasado / Embotellado</option>
+                            <option value="Limpieza">Vaciado total y Limpieza</option>
+                        </select>
+
+                        <label class="block text-sm font-bold text-stone-700 mb-2">Notas (Opcional)</label>
+                        <textarea id="input-notes" placeholder="Añade observaciones aquí..." class="w-full border border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none h-20 text-sm resize-none"></textarea>
+                    </div>
+
+                    <button onclick="saveMovement()" id="btn-save" class="w-full bg-stone-900 hover:bg-black text-rose-400 font-bold text-lg py-4 px-4 rounded-xl shadow-xl transition-all flex justify-center items-center gap-2 border border-stone-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        Guardar Movimiento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONEXIÓN REAL A SUPABASE
+        // ==========================================
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://txkqgakiqwpsxvvfhko.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4a3FnYWtpcXdwbXN4dnZmaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5NDMxMjAsImV4cCI6MjA5MzUxOTEyMH0.dwCLSUoM7R3zWNzOYMrmuzxmamCMc3XJq2sHMsFsf0A';
+        const db = createClient(supabaseUrl, supabaseKey);
+
+        // ==========================================
+        // SISTEMA DE USUARIOS Y LOGIN
+        // ==========================================
+        const usersDB = {
+            'jlgarcia': 'Lenovo291580',
+            'nponce': 'Lenovo801235',
+            'acortijo': 'Lenovo801231',
+            'cgordillo': 'Lenovo801245',
+            'jvergara': 'Lenovo801223',
+            'alavado': 'Lenovo801228',
+            'jmartin': 'Lenovo801224',
+            'jmvera': 'Lenovo801277'
+        };
+
+        let currentUser = localStorage.getItem('bodega_user') || null;
+
+        const checkLoginState = () => {
+            if (currentUser) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('display-user').innerText = currentUser;
+
+                // VISIBILIDAD DEL BOTÓN BORRAR HISTORIAL (SÓLO ADMINS)
+                const btnClearHistory = document.getElementById('btn-clear-history');
+                if (currentUser === 'jlgarcia' || currentUser === 'jmvera') {
+                    btnClearHistory.classList.remove('hidden');
+                } else {
+                    btnClearHistory.classList.add('hidden');
+                }
+
+                initApp(); 
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('hidden');
+            }
+        };
+
+        const login = () => {
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            const errorMsg = document.getElementById('login-error');
+
+            if (usersDB[user] && usersDB[user] === pass) {
+                currentUser = user;
+                localStorage.setItem('bodega_user', user);
+                errorMsg.classList.add('hidden');
+                document.getElementById('login-user').value = '';
+                document.getElementById('login-pass').value = '';
+                checkLoginState();
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        };
+
+        const logout = () => {
+            currentUser = null;
+            localStorage.removeItem('bodega_user');
+            checkLoginState();
+        };
+
+        document.getElementById('login-pass').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') login();
+        });
+
+        // ==========================================
+        // LÓGICA PRINCIPAL Y RENDERIZADO
+        // ==========================================
+        let currentDepositId = null;
+        let depositsData = [];
+        let filteredData = [];
+        let currentView = 'grid';
+
+        const productTypes = {
+            'vino_tinto': { display: 'Vino Tinto', colorCode: 'bg-rose-800', textColor: 'text-rose-800' },
+            'vino_blanco': { display: 'Vino Blanco', colorCode: 'bg-lime-200', textColor: 'text-lime-700' }
+        };
+
+        const initApp = async () => {
+            if (depositsData.length > 0) return; 
+
+            // Cargar datos reales desde la tabla 'depositos' de Supabase
+            const { data: tanks, error } = await db.from('depositos').select('*').order('id', { ascending: true });
+            
+            if (error) {
+                alert("Error conectando a Supabase: " + error.message);
+                return;
+            }
+
+            if(tanks.length === 0) {
+                alert("¡Bienvenido! Pero la base de datos está vacía. Recuerda ejecutar el código SQL en Supabase para crear los 76 depósitos.");
+                return;
+            }
+
+            tanks.forEach(tank => {
+                const fillLevel = Math.min(100, Math.round((tank.cantidad_actual / tank.capacidad_total) * 100));
+                depositsData.push({
+                    id: tank.id,
+                    name: tank.name,
+                    level: fillLevel,
+                    producto: tank.producto,
+                    cantidadActual: tank.cantidad_actual,
+                    capacidadTotal: tank.capacidad_total,
+                    grado: tank.grado
+                });
+            });
+            
+            applyFilters(); 
+            renderHistory();
+        };
+
+        const applyFilters = () => {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filterType = document.getElementById('filter-select').value;
+            const showEmpty = document.getElementById('filter-empty').checked;
+
+            filteredData = depositsData.filter(dep => {
+                const matchesSearch = dep.name.toLowerCase().includes(searchTerm);
+                const matchesType = filterType === 'all' || dep.producto === filterType;
+                const matchesEmpty = showEmpty || dep.cantidadActual > 0;
+                
+                return matchesSearch && matchesType && matchesEmpty;
+            });
+
+            document.getElementById('no-results').classList.toggle('hidden', filteredData.length > 0);
+            
+            if (currentView === 'grid') renderGrid();
+            else if (currentView === 'list') renderList();
+        };
+
+        const renderGrid = () => {
+            const grid = document.getElementById('view-grid');
+            grid.innerHTML = '';
+            filteredData.forEach(dep => {
+                const typeInfo = productTypes[dep.producto];
+                const opacityClass = dep.cantidadActual === 0 ? 'opacity-20' : 'opacity-[0.85]';
+                
+                const card = document.createElement('div');
+                card.className = "flex flex-col relative group";
+                card.innerHTML = `
+                    <div onclick="openModal(${dep.id})" class="relative w-full h-[320px] cursor-pointer flex flex-col items-center mt-2 hover:scale-[1.02] transition-transform">
+                        <div class="w-11/12 h-8 stainless-steel rounded-t-[2rem] border border-stone-400 z-10 shadow-sm"></div>
+                        <div class="w-full h-full relative border-x border-stone-300 overflow-hidden bg-stone-100/30 backdrop-blur-sm z-20">
+                            <div class="absolute inset-0 bg-gradient-to-r from-white/60 via-transparent to-black/10 z-30 pointer-events-none"></div>
+                            
+                            <div class="absolute bottom-0 left-0 w-full ${typeInfo.colorCode} ${opacityClass} liquid-shadow fill-level z-10 border-t border-white/20" style="height: 0%;" id="fill-${dep.id}"></div>
+                            
+                            <div class="absolute inset-0 flex flex-col items-center justify-center z-40 pointer-events-none p-4">
+                                <div class="glass-panel text-white p-3 rounded-lg shadow-xl w-full text-center border-t border-white/20">
+                                    <div class="flex justify-between items-center border-b border-stone-400/30 pb-1 mb-1">
+                                        <h3 class="font-black text-sm tracking-widest text-stone-100">${dep.name}</h3>
+                                        <span class="text-[10px] font-bold text-amber-300 bg-stone-900/50 px-1.5 py-0.5 rounded">${dep.grado}% Vol.</span>
+                                    </div>
+                                    <p class="font-bold text-2xl leading-none text-white mt-2">${dep.cantidadActual.toLocaleString('es-ES')}<span class="text-xs font-normal text-stone-300 ml-1">L</span></p>
+                                    <div class="w-full bg-stone-900/60 rounded-full h-1 mt-2 overflow-hidden shadow-inner">
+                                        <div class="bg-white h-1 rounded-full" style="width: ${dep.level}%"></div>
+                                    </div>
+                                    <p class="text-[9px] text-stone-300 font-bold mt-1 uppercase tracking-wider">${dep.cantidadActual === 0 ? 'VACÍO' : typeInfo.display}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full h-4 stainless-steel border-x border-b border-stone-400 rounded-b-lg z-10 shadow-md"></div>
+                    </div>
+                `;
+                grid.appendChild(card);
+                setTimeout(() => { 
+                    const el = document.getElementById(`fill-${dep.id}`);
+                    if(el) el.style.height = `${dep.level}%`; 
+                }, 50);
+            });
+        };
+
+        const renderList = () => {
+            const listContainer = document.getElementById('view-list');
+            listContainer.innerHTML = '';
+            filteredData.forEach(dep => {
+                const typeInfo = productTypes[dep.producto];
+                let progressColor = dep.level > 85 ? 'bg-red-500' : (dep.level > 20 ? 'bg-rose-500' : 'bg-amber-500');
+                if (dep.producto === 'vino_blanco' && dep.level <= 85) progressColor = 'bg-lime-500';
+                
+                const bgIndicator = dep.cantidadActual === 0 ? 'bg-stone-300' : typeInfo.colorCode;
+
+                const item = document.createElement('div');
+                item.className = "bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors";
+                item.onclick = () => openModal(dep.id);
+                item.innerHTML = `
+                    <div class="flex items-center gap-4 flex-grow">
+                        <div class="w-4 h-14 rounded-full ${bgIndicator} border border-stone-300 shadow-inner flex-shrink-0"></div>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-center mb-1">
+                                <h3 class="font-black text-lg text-stone-800 leading-none">${dep.name}</h3>
+                                <span class="text-[10px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">${dep.grado}% Vol.</span>
+                            </div>
+                            <div class="flex justify-between items-end mt-1">
+                                <p class="text-xl font-bold text-stone-600">${dep.cantidadActual.toLocaleString('es-ES')} <span class="text-xs font-normal">L</span></p>
+                                <span class="font-bold text-[10px] ${dep.cantidadActual === 0 ? 'text-stone-400' : typeInfo.textColor} uppercase bg-stone-50 px-1 rounded">${dep.cantidadActual === 0 ? 'VACÍO' : typeInfo.display}</span>
+                            </div>
+                            <div class="w-full bg-stone-100 rounded-full h-1.5 mt-2 overflow-hidden shadow-inner">
+                                <div class="${progressColor} h-1.5 rounded-full" style="width: ${dep.level}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        };
+
+        const renderHistory = async () => {
+            const container = document.getElementById('history-list');
+            container.innerHTML = `<p class="text-center text-stone-400 py-6">Cargando movimientos...</p>`;
+            
+            // Cargar los últimos 100 registros desde Supabase
+            const { data: historyData, error } = await db.from('historial').select('*').order('id', { ascending: false }).limit(100);
+
+            if (error || !historyData || historyData.length === 0) {
+                container.innerHTML = `<p class="text-center text-stone-400 py-6">No hay movimientos registrados.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            historyData.forEach(record => {
+                const item = document.createElement('div');
+                item.className = "bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex flex-col gap-2";
+                item.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-stone-100 pb-2">
+                        <span class="text-xs font-bold text-stone-400">${record.fecha}</span>
+                        <span class="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded border border-stone-200 uppercase">👤 ${record.usuario}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-black text-lg text-rose-800">${record.deposito}</h4>
+                            <span class="text-[10px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded">${record.accion}</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <div class="bg-stone-50 p-2 rounded border border-stone-100">
+                            <p class="text-[10px] text-stone-500 font-bold uppercase">Litros</p>
+                            <p class="text-sm font-bold text-stone-700">${record.nivel_anterior.toLocaleString('es-ES')} ➔ <span class="text-rose-600">${record.nuevo_nivel.toLocaleString('es-ES')}</span></p>
+                        </div>
+                        <div class="bg-stone-50 p-2 rounded border border-stone-100">
+                            <p class="text-[10px] text-stone-500 font-bold uppercase">Grado</p>
+                            <p class="text-sm font-bold text-stone-700">${record.grado_anterior} ➔ <span class="text-rose-600">${record.nuevo_grado}</span></p>
+                        </div>
+                    </div>
+                    ${record.notas ? `<p class="text-xs text-stone-500 mt-1 italic">"${record.notas}"</p>` : ''}
+                `;
+                container.appendChild(item);
+            });
+        };
+
+        const clearHistory = async () => {
+            if(confirm("ATENCIÓN ADMIN: ¿Estás seguro de borrar todo el historial en la Base de Datos de Supabase? Esta acción borrará permanentemente todos los registros para todos los usuarios y no se puede deshacer.")) {
+                
+                // Borrar registros en BBDD
+                const { error } = await db.from('historial').delete().neq('id', 0); 
+                
+                if(error) {
+                    alert("Error al borrar historial: " + error.message);
+                } else {
+                    alert("Historial borrado correctamente.");
+                    renderHistory();
+                }
+            }
+        };
+
+        const setView = (viewType) => {
+            currentView = viewType;
+            const btnGrid = document.getElementById('btn-grid');
+            const btnList = document.getElementById('btn-list');
+            const btnHist = document.getElementById('btn-history');
+            const viewGrid = document.getElementById('view-grid');
+            const viewList = document.getElementById('view-list');
+            const viewHist = document.getElementById('view-history');
+            const searchBox = document.getElementById('search-container');
+
+            [btnGrid, btnList, btnHist].forEach(btn => btn.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-md text-stone-400 hover:text-white transition-colors flex justify-center items-center gap-1 md:gap-2");
+            viewGrid.classList.add('hidden');
+            viewList.classList.add('hidden');
+            viewHist.classList.add('hidden');
+
+            const activeClass = "flex-1 py-2 text-xs md:text-sm font-bold rounded-md bg-stone-600 text-white shadow transition-colors flex justify-center items-center gap-1 md:gap-2";
+
+            if (viewType === 'grid') {
+                btnGrid.className = activeClass;
+                viewGrid.classList.remove('hidden');
+                searchBox.classList.remove('hidden');
+                renderGrid();
+            } else if (viewType === 'list') {
+                btnList.className = activeClass;
+                viewList.classList.remove('hidden');
+                searchBox.classList.remove('hidden');
+                renderList();
+            } else if (viewType === 'history') {
+                btnHist.className = activeClass;
+                viewHist.classList.remove('hidden');
+                searchBox.classList.add('hidden'); 
+                renderHistory();
+            }
+        };
+
+        const openModal = (depId) => {
+            currentDepositId = depId;
+            const deposit = depositsData.find(d => d.id === depId);
+            const typeInfo = productTypes[deposit.producto];
+
+            document.getElementById('modal-title').innerText = deposit.name;
+            document.getElementById('modal-subtitle').innerText = deposit.cantidadActual === 0 ? 'Depósito Vacío' : typeInfo.display;
+            document.getElementById('modal-current-level').innerText = `${deposit.cantidadActual.toLocaleString('es-ES')} L`;
+            document.getElementById('modal-current-grado').innerText = `(${deposit.grado}% Vol.)`;
+            
+            document.getElementById('modal-color-indicator').className = `w-6 h-6 rounded-full ${deposit.cantidadActual === 0 ? 'bg-stone-300' : typeInfo.colorCode} shadow-inner border-2 border-stone-300`;
+            
+            document.getElementById('input-level').value = deposit.cantidadActual;
+            document.getElementById('input-grado').value = deposit.grado;
+            document.getElementById('modal-capacity-info').innerText = `Capacidad Máxima: ${deposit.capacidadTotal.toLocaleString('es-ES')} L`;
+            document.getElementById('input-notes').value = '';
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        const closeModal = () => document.getElementById('edit-modal').classList.add('hidden');
+
+        // ==========================================
+        // SUBIR DATOS A SUPABASE
+        // ==========================================
+        const saveMovement = async () => {
+            const btn = document.getElementById('btn-save');
+            const originalText = btn.innerHTML;
+            
+            const deposit = depositsData.find(d => d.id === currentDepositId);
+            const newLevel = parseInt(document.getElementById('input-level').value) || 0;
+            const newGrado = parseFloat(document.getElementById('input-grado').value) || 0;
+            const action = document.getElementById('input-action').value;
+            const notes = document.getElementById('input-notes').value;
+            
+            if(newLevel > deposit.capacidadTotal) {
+                alert(`El nivel (${newLevel.toLocaleString('es-ES')} L) supera la capacidad del depósito (${deposit.capacidadTotal.toLocaleString('es-ES')} L)`);
+                return;
+            }
+            
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-rose-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Registrando...`;
+            
+            try {
+                // 1. ACTUALIZAR TANQUE EN SUPABASE
+                const { error: err1 } = await db.from('depositos')
+                    .update({ cantidad_actual: newLevel, grado: newGrado })
+                    .eq('id', deposit.id);
+                
+                if(err1) throw err1;
+
+                // 2. AÑADIR REGISTRO AL HISTORIAL
+                const { error: err2 } = await db.from('historial').insert([{
+                    fecha: new Date().toLocaleString('es-ES'),
+                    usuario: currentUser,
+                    deposito: deposit.name,
+                    producto: productTypes[deposit.producto].display,
+                    nivel_anterior: deposit.cantidadActual,
+                    nuevo_nivel: newLevel,
+                    grado_anterior: deposit.grado,
+                    nuevo_grado: newGrado,
+                    accion: action,
+                    notas: notes
+                }]);
+                
+                if(err2) throw err2;
+
+                // 3. ACTUALIZAR LA VISTA LOCAL
+                deposit.cantidadActual = newLevel;
+                deposit.grado = newGrado;
+                deposit.level = Math.min(100, Math.round((newLevel / deposit.capacidadTotal) * 100));
+                
+                applyFilters(); 
+                renderHistory(); // Recarga la pestaña de historial
+                
+                btn.innerHTML = `<svg class="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ¡Registrado!`;
+                
+                setTimeout(() => {
+                    closeModal();
+                    btn.innerHTML = originalText;
+                }, 1000);
+
+            } catch (error) {
+                console.error("Error al guardar:", error);
+                btn.innerHTML = `Error de conexión BBDD`;
+                setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+            }
+        };
+
+        // ARRANCAR
+        checkLoginState();
+    </script>
+</body>
+</html>
