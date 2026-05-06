@@ -6,6 +6,7 @@
     <title>Virgen de la Estrella - App Móvil</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -71,12 +72,12 @@
                     </div>
                 </div>
                 
-                <!-- Botonera de Vistas -->
+                <!-- Botonera de Vistas (LISTA ACTIVA POR DEFECTO) -->
                 <div class="flex bg-stone-800 rounded-xl p-1 w-full self-center border border-stone-700 shadow-inner">
-                    <button id="btn-grid" onclick="setView('grid')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-stone-600 text-white shadow transition-all flex justify-center items-center gap-2">
+                    <button id="btn-grid" onclick="setView('grid')" class="flex-1 py-2 text-xs font-bold rounded-lg text-stone-400 hover:text-white transition-all flex justify-center items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg> 3D
                     </button>
-                    <button id="btn-list" onclick="setView('list')" class="flex-1 py-2 text-xs font-bold rounded-lg text-stone-400 hover:text-white transition-all flex justify-center items-center gap-2">
+                    <button id="btn-list" onclick="setView('list')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-stone-600 text-white shadow transition-all flex justify-center items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg> LISTA
                     </button>
                     <button id="btn-history" onclick="setView('history')" class="flex-1 py-2 text-xs font-bold rounded-lg text-stone-400 hover:text-white transition-all flex justify-center items-center gap-2">
@@ -109,7 +110,7 @@
                         <label for="filter-empty" class="text-[10px] font-black uppercase text-stone-600">Vacíos</label>
                     </div>
 
-                    <!-- NUEVO BOTÓN DE EXCEL -->
+                    <!-- BOTÓN DE EXCEL -->
                     <button onclick="exportarExcel()" id="btn-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl flex items-center gap-2 font-black text-[10px] md:text-xs uppercase transition-all shadow-sm border border-emerald-800 active:scale-95">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         <span class="hidden md:inline">Descargar</span> Excel
@@ -117,9 +118,9 @@
                 </div>
             </div>
 
-            <!-- CONTENEDORES DE VISTAS -->
-            <div id="view-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
-            <div id="view-list" class="hidden flex flex-col gap-2 max-w-3xl mx-auto"></div>
+            <!-- CONTENEDORES DE VISTAS (Lista visible por defecto, 3D oculto) -->
+            <div id="view-grid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            <div id="view-list" class="flex flex-col gap-2 max-w-3xl mx-auto"></div>
             <div id="view-history" class="hidden flex flex-col gap-3 max-w-3xl mx-auto">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-sm font-black uppercase text-stone-500 tracking-widest font-bold">Registro de Bodega</h2>
@@ -196,9 +197,7 @@
     </div>
 
     <script>
-        // ==========================================
-        // CONFIGURACIÓN SUPABASE (¡CON LA M ARREGLADA!)
-        // ==========================================
+        // CONFIGURACIÓN SUPABASE
         const { createClient } = supabase;
         const supabaseUrl = 'https://txkqgakiqwpmsxvvfhko.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4a3FnYWtpcXdwbXN4dnZmaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5NDMxMjAsImV4cCI6MjA5MzUxOTEyMH0.dwCLSUoM7R3zWNzOYMrmuzxmamCMc3XJq2sHMsFsf0A';
@@ -210,7 +209,6 @@
             'jmartin': 'Lenovo801224', 'jmvera': 'Lenovo801277'
         };
 
-        // COLORES DE TODOS LOS PRODUCTOS DE LA COOPERATIVA
         const productTypes = {
             'vino_tinto': { display: 'Vino Tinto', colorCode: 'bg-rose-900', textColor: 'text-rose-900' },
             'vino_blanco': { display: 'Vino Blanco', colorCode: 'bg-amber-100', textColor: 'text-amber-700' },
@@ -222,7 +220,7 @@
         let currentUser = localStorage.getItem('bodega_user') || null;
         let depositsData = [];
         let filteredData = [];
-        let currentView = 'grid';
+        let currentView = 'list'; // <-- VISTA LISTA POR DEFECTO
         let currentDepositId = null;
 
         // LOGIN
@@ -264,7 +262,7 @@
             if (e.key === 'Enter') login();
         });
 
-        // DESCARGAR DATOS DESDE SUPABASE
+        // DATOS
         const initApp = async () => {
             if(depositsData.length > 0) return;
             try {
@@ -292,17 +290,19 @@
                 (empty || d.cantidadActual > 0)
             );
             document.getElementById('no-results').classList.toggle('hidden', filteredData.length > 0);
-            currentView === 'grid' ? renderGrid() : (currentView === 'list' ? renderList() : renderHistory());
+            
+            // DIBUJAR AMBAS VISTAS SIEMPRE PARA EVITAR QUE AL CAMBIAR DE PESTAÑA SALGA VACÍO
+            renderGrid();
+            renderList();
         };
 
-        // EXPORTAR A EXCEL Y REGISTRAR EN EL LOG
+        // EXPORTAR A EXCEL Y LOG
         const exportarExcel = async () => {
             const btn = document.getElementById('btn-excel');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = `<svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Generando...`;
             
             try {
-                // 1. Preparar datos para Excel
                 const dateObj = new Date();
                 const fechaCorta = dateObj.toLocaleDateString('es-ES').replace(/\//g, '-');
                 const hora = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute:'2-digit' }).replace(':', '');
@@ -317,17 +317,14 @@
                     '% Llenado': dep.level + '%'
                 }));
 
-                // Calcular totales para la última fila
                 const totalLitros = dataExport.reduce((sum, current) => sum + current['Litros Actuales'], 0);
                 dataExport.push({ 'Depósito': 'TOTAL', 'Producto': '-', 'Litros Actuales': totalLitros, 'Capacidad (L)': '-', 'Grado / Baume': '-', '% Llenado': '-' });
 
-                // 2. Generar archivo con SheetJS
                 const ws = XLSX.utils.json_to_sheet(dataExport);
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Inventario");
                 XLSX.writeFile(wb, fileName);
 
-                // 3. Guardar el registro en la base de datos (Historial)
                 await db.from('historial').insert([{
                     fecha: new Date().toLocaleString('es-ES'),
                     usuario: currentUser,
@@ -341,7 +338,7 @@
                     notas: `Generó un archivo Excel con ${filteredData.length} depósitos (${totalLitros.toLocaleString()} L totales).`
                 }]);
 
-                renderHistory(); // Refrescar vista
+                renderHistory();
                 btn.innerHTML = originalHTML;
 
             } catch (err) {
@@ -417,7 +414,6 @@
             data.forEach(h => {
                 const item = document.createElement('div');
                 
-                // Diseño especial si es un registro de Excel
                 if (h.accion === 'Descarga Excel') {
                     item.className = "bg-emerald-50 p-3 rounded-xl border border-emerald-200 shadow-sm flex flex-col gap-1";
                     item.innerHTML = `
@@ -432,7 +428,6 @@
                         <p class="text-xs text-emerald-700 font-bold italic mt-1">${h.notas}</p>
                     `;
                 } else {
-                    // Diseño normal de depósitos
                     item.className = "bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col gap-1";
                     item.innerHTML = `
                         <div class="flex justify-between items-center border-b border-stone-50 pb-1">
@@ -447,7 +442,7 @@
                         </div>
                         <div class="flex gap-4 mt-1">
                             <p class="text-[11px] font-bold text-stone-600">Vol: ${h.nivel_anterior.toLocaleString()} ➔ <span class="text-rose-600">${h.nuevo_nivel.toLocaleString()} L</span></p>
-                            <p class="text-[11px] font-bold text-stone-600">G: ${h.grado_anterior} ➔ <span class="text-rose-600">${h.nuevo_grado}</span></p>
+                            <p class="text-[11px] font-bold text-stone-600">G/B: ${h.grado_anterior} ➔ <span class="text-rose-600">${h.nuevo_grado}</span></p>
                         </div>
                         ${h.notas ? `<p class="text-[10px] text-stone-400 italic mt-1 bg-stone-50 p-1 rounded">"${h.notas}"</p>` : ''}
                     `;
