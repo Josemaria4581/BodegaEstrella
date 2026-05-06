@@ -7,9 +7,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Librerías: Tailwind (Diseño) y Supabase (Base de datos) -->
+    <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería para crear archivos Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         .fill-level { transition: height 1.5s cubic-bezier(0.25, 0.8, 0.25, 1); }
@@ -18,8 +20,6 @@
         .glass-panel { background: rgba(28, 25, 23, 0.85); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
         .slide-up { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .toggle-checkbox:checked { right: 0; border-color: #9f1239; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #9f1239; }
     </style>
 </head>
 <body class="bg-stone-100 min-h-screen font-sans text-stone-800 pb-10">
@@ -28,24 +28,25 @@
     <div id="login-screen" class="fixed inset-0 bg-stone-900 z-50 flex flex-col justify-center items-center p-4">
         <div class="bg-stone-50 p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-stone-200">
             <div class="text-center mb-8">
-                <svg class="w-16 h-16 text-rose-800 mx-auto mb-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c0 0-7.5 9-7.5 14.5A7.5 7.5 0 0 0 12 24a7.5 7.5 0 0 0 7.5-7.5C19.5 11 12 2 12 2z"/></svg>
-                <h1 class="text-2xl font-black text-stone-800">Virgen de la Estrella</h1>
-                <p class="text-sm text-stone-500 font-medium mt-1">Acceso a Operarios</p>
+                <!-- Tu logo personalizado -->
+                <img src="logo.png" alt="Logo Bodega" class="w-28 mx-auto mb-4 object-contain" onerror="this.outerHTML='<svg class=\'w-16 h-16 text-rose-800 mx-auto mb-3\' fill=\'currentColor\' viewBox=\'0 0 24 24\'><path d=\'M12 2c0 0-7.5 9-7.5 14.5A7.5 7.5 0 0 0 12 24a7.5 7.5 0 0 0 7.5-7.5C19.5 11 12 2 12 2z\'/></svg>'">
+                <h1 class="text-2xl font-black text-stone-800 uppercase tracking-tighter">Virgen de la Estrella</h1>
+                <p class="text-xs text-stone-500 font-bold mt-1 uppercase tracking-widest">Control de Bodega</p>
             </div>
             
             <div class="mb-5">
-                <label class="block text-sm font-bold text-stone-700 mb-2">Usuario</label>
-                <input type="text" id="login-user" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none bg-white font-medium" placeholder="Ej: jlgarcia">
+                <label class="block text-xs font-black text-stone-500 uppercase mb-2">Usuario Operario</label>
+                <input type="text" id="login-user" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none bg-white font-bold" placeholder="ej: jlgarcia">
             </div>
             <div class="mb-6">
-                <label class="block text-sm font-bold text-stone-700 mb-2">Contraseña</label>
-                <input type="password" id="login-pass" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none bg-white font-medium" placeholder="••••••••">
+                <label class="block text-xs font-black text-stone-500 uppercase mb-2">Contraseña</label>
+                <input type="password" id="login-pass" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none bg-white font-bold" placeholder="••••••••">
             </div>
             
-            <p id="login-error" class="text-red-600 text-sm font-bold mb-4 hidden text-center">Usuario o contraseña incorrectos</p>
+            <p id="login-error" class="text-red-600 text-xs font-bold mb-4 hidden text-center italic">Acceso denegado</p>
             
-            <button onclick="login()" class="w-full bg-rose-800 hover:bg-rose-900 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all">
-                Iniciar Sesión
+            <button onclick="login()" class="w-full bg-rose-800 hover:bg-rose-900 text-white font-black text-lg py-4 rounded-xl shadow-lg transition-all active:scale-95 uppercase">
+                Entrar al Sistema
             </button>
         </div>
     </div>
@@ -55,144 +56,139 @@
         <header class="bg-stone-900 text-stone-100 p-4 shadow-xl sticky top-0 z-30 border-b-4 border-rose-800">
             <div class="container mx-auto flex flex-col gap-4">
                 <div class="flex justify-between items-center">
-                    <h1 class="text-xl font-bold flex items-center gap-2">
-                        <svg class="w-6 h-6 text-rose-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c0 0-7.5 9-7.5 14.5A7.5 7.5 0 0 0 12 24a7.5 7.5 0 0 0 7.5-7.5C19.5 11 12 2 12 2z"/></svg>
+                    <h1 class="text-lg font-black flex items-center gap-2 uppercase">
+                        <img src="logo.png" alt="Logo" class="w-7 h-7 object-contain" onerror="this.outerHTML='<svg class=\'w-5 h-5 text-rose-500\' fill=\'currentColor\' viewBox=\'0 0 24 24\'><path d=\'M12 2c0 0-7.5 9-7.5 14.5A7.5 7.5 0 0 0 12 24a7.5 7.5 0 0 0 7.5-7.5C19.5 11 12 2 12 2z\'/></svg>'">
                         Virgen de la Estrella
                     </h1>
                     <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-stone-300 flex items-center gap-1">
-                            <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>
-                            <span id="display-user">Operario</span>
+                        <span class="text-[10px] font-bold text-stone-400 bg-stone-800 px-2 py-1 rounded border border-stone-700 flex items-center gap-1">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            <span id="display-user">Usuario</span>
                         </span>
-                        <button onclick="logout()" class="text-rose-400 hover:text-white p-1" title="Cerrar Sesión">
+                        <button onclick="logout()" class="text-rose-400 hover:text-white transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                         </button>
                     </div>
                 </div>
                 
-                <div class="flex bg-stone-800 rounded-lg p-1 w-full self-center border border-stone-700 shadow-inner">
-                    <button id="btn-grid" onclick="setView('grid')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-md bg-stone-600 text-white shadow transition-colors flex justify-center items-center gap-1 md:gap-2">
-                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                        3D
+                <!-- Botonera de Vistas -->
+                <div class="flex bg-stone-800 rounded-xl p-1 w-full self-center border border-stone-700 shadow-inner">
+                    <button id="btn-grid" onclick="setView('grid')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-stone-600 text-white shadow transition-all flex justify-center items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg> 3D
                     </button>
-                    <button id="btn-list" onclick="setView('list')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-md text-stone-400 hover:text-white transition-colors flex justify-center items-center gap-1 md:gap-2">
-                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                        Lista
+                    <button id="btn-list" onclick="setView('list')" class="flex-1 py-2 text-xs font-bold rounded-lg text-stone-400 hover:text-white transition-all flex justify-center items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg> LISTA
                     </button>
-                    <button id="btn-history" onclick="setView('history')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-md text-stone-400 hover:text-white transition-colors flex justify-center items-center gap-1 md:gap-2">
-                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Historial
+                    <button id="btn-history" onclick="setView('history')" class="flex-1 py-2 text-xs font-bold rounded-lg text-stone-400 hover:text-white transition-all flex justify-center items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> LOG
                     </button>
                 </div>
             </div>
         </header>
 
-        <main class="container mx-auto p-4 md:p-8">
+        <main class="container mx-auto p-4 max-w-5xl">
             
-            <!-- CONTENEDOR BUSCADOR Y FILTROS -->
-            <div id="search-container" class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-stone-200 mb-6 flex flex-col md:flex-row gap-3 items-center">
-                <!-- Buscador de texto -->
-                <div class="relative flex-grow w-full">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </div>
-                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Buscar depósito (ej. M-6)" class="w-full pl-10 pr-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-800 transition-colors bg-stone-50">
+            <!-- BUSCADOR, FILTROS Y BOTÓN EXCEL -->
+            <div id="search-container" class="bg-white p-3 rounded-2xl shadow-sm border border-stone-200 mb-6 flex flex-col md:flex-row gap-3">
+                <div class="relative flex-grow">
+                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Buscar depósito..." class="w-full pl-10 pr-3 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-rose-800 outline-none bg-stone-50 font-bold text-sm">
+                    <svg class="w-5 h-5 text-stone-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
                 
-                <div class="flex gap-3 w-full md:w-auto">
-                    <!-- Selector de Vino -->
-                    <select id="filter-select" onchange="applyFilters()" class="flex-1 md:flex-none px-3 py-2.5 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-800 bg-stone-50 font-bold text-stone-700 text-sm">
-                        <option value="all">Todos los Vinos</option>
-                        <option value="vino_tinto">🍷 Solo Tinto</option>
-                        <option value="vino_blanco">🥂 Solo Blanco</option>
+                <div class="flex gap-2">
+                    <select id="filter-select" onchange="applyFilters()" class="flex-1 px-3 py-3 border border-stone-300 rounded-xl bg-stone-50 font-bold text-xs uppercase">
+                        <option value="all">Todos</option>
+                        <option value="vino_tinto">🍷 Tinto</option>
+                        <option value="vino_blanco">🥂 Blanco</option>
+                        <option value="mosto_azufrado">🟡 Mostos</option>
+                        <option value="lias">🟤 Lías</option>
                     </select>
-
-                    <!-- Interruptor Mostrar Vacíos -->
-                    <div class="flex items-center gap-2 px-3 py-2.5 border border-stone-300 rounded-lg bg-stone-50 shrink-0">
-                        <input type="checkbox" id="filter-empty" onchange="applyFilters()" class="w-4 h-4 text-rose-800 border-stone-400 rounded focus:ring-rose-800">
-                        <label for="filter-empty" class="text-sm font-bold text-stone-700 cursor-pointer">Mostrar Vacíos</label>
+                    
+                    <div class="flex items-center gap-2 px-3 border border-stone-300 rounded-xl bg-stone-50">
+                        <input type="checkbox" id="filter-empty" onchange="applyFilters()" class="w-4 h-4 accent-rose-800">
+                        <label for="filter-empty" class="text-[10px] font-black uppercase text-stone-600">Vacíos</label>
                     </div>
+
+                    <!-- NUEVO BOTÓN DE EXCEL -->
+                    <button onclick="exportarExcel()" id="btn-excel" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl flex items-center gap-2 font-black text-[10px] md:text-xs uppercase transition-all shadow-sm border border-emerald-800 active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span class="hidden md:inline">Descargar</span> Excel
+                    </button>
                 </div>
             </div>
 
-            <!-- VISTAS DE DATOS -->
-            <div id="view-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8"></div>
-            <div id="view-list" class="hidden flex flex-col gap-3 max-w-3xl mx-auto"></div>
-            
-            <!-- VISTA HISTORIAL -->
+            <!-- CONTENEDORES DE VISTAS -->
+            <div id="view-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            <div id="view-list" class="hidden flex flex-col gap-2 max-w-3xl mx-auto"></div>
             <div id="view-history" class="hidden flex flex-col gap-3 max-w-3xl mx-auto">
                 <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-xl font-black text-stone-800">Registro de Movimientos</h2>
-                    <button id="btn-clear-history" onclick="clearHistory()" class="hidden text-xs text-red-600 hover:text-red-800 font-bold border border-red-200 bg-red-50 px-2 py-1 rounded">Borrar Historial Completo</button>
+                    <h2 class="text-sm font-black uppercase text-stone-500 tracking-widest font-bold">Registro de Bodega</h2>
+                    <button id="btn-clear-history" onclick="clearHistory()" class="hidden text-[10px] font-black text-red-600 border border-red-200 bg-red-50 px-3 py-1 rounded-lg uppercase hover:bg-red-100 transition-colors">Borrar BBDD</button>
                 </div>
-                <div id="history-list" class="flex flex-col gap-3"></div>
+                <div id="history-list" class="space-y-3"></div>
             </div>
 
-            <div id="no-results" class="hidden text-center py-10">
-                <svg class="w-16 h-16 text-stone-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <p class="text-stone-500 font-bold">No hay depósitos con esos filtros.</p>
+            <div id="no-results" class="hidden text-center py-20">
+                <p class="text-stone-400 font-bold italic uppercase text-xs">Sin depósitos con este filtro</p>
             </div>
         </main>
 
         <!-- MODAL DE EDICIÓN -->
-        <div id="edit-modal" class="fixed inset-0 bg-stone-900 bg-opacity-60 hidden z-50 transition-opacity backdrop-blur-sm">
+        <div id="edit-modal" class="fixed inset-0 bg-stone-900/80 hidden z-50 transition-all backdrop-blur-sm flex items-end md:items-center justify-center">
             <div class="absolute inset-0" onclick="closeModal()"></div>
-            
-            <div class="absolute bottom-0 left-0 right-0 bg-stone-50 rounded-t-3xl shadow-2xl flex flex-col max-h-[95vh] md:w-[450px] md:mx-auto md:top-10 md:bottom-auto md:rounded-b-3xl slide-up border border-stone-200">
-                <div class="bg-stone-800 text-white p-5 rounded-t-3xl flex justify-between items-start border-b border-stone-700">
+            <div class="bg-stone-50 w-full max-w-lg rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden slide-up z-10 border border-stone-200">
+                <div class="bg-stone-800 text-white p-5 flex justify-between items-center border-b-4 border-rose-800">
                     <div>
-                        <div class="flex items-center gap-3">
-                            <h3 id="modal-title" class="font-black text-2xl text-rose-400">DEP</h3>
-                            <span id="modal-grado" class="bg-stone-700 text-stone-200 text-xs font-bold px-2 py-1 rounded">0% Vol.</span>
-                        </div>
-                        <p id="modal-subtitle" class="text-sm font-medium text-stone-300 mt-1">Producto</p>
+                        <h3 id="modal-title" class="font-black text-2xl text-rose-400 uppercase tracking-tighter">DEP</h3>
+                        <p id="modal-subtitle" class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">Vino</p>
                     </div>
-                    <button onclick="closeModal()" class="text-stone-400 hover:text-white bg-stone-700 p-2 rounded-full transition-colors">
+                    <button onclick="closeModal()" class="bg-stone-700 p-2 rounded-full text-stone-300 hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
 
-                <div class="p-6 overflow-y-auto">
-                    <div class="mb-5 bg-white p-4 rounded-xl border border-stone-200 shadow-sm flex justify-between items-center">
+                <div class="p-6">
+                    <div class="bg-white p-4 rounded-2xl border border-stone-200 mb-6 flex justify-between items-center shadow-inner">
                         <div>
-                            <p class="text-[10px] font-bold text-stone-500 uppercase tracking-wide mb-1">Estado Anterior</p>
+                            <p class="text-[9px] font-black text-stone-400 uppercase mb-1">Estado Actual</p>
                             <div class="flex items-baseline gap-2">
-                                <p id="modal-current-level" class="text-xl font-black text-stone-800">0 L</p>
-                                <p id="modal-current-grado" class="text-sm text-stone-500 font-medium">0% Vol.</p>
+                                <span id="modal-current-level" class="text-2xl font-black text-stone-800">0 L</span>
+                                <span id="modal-current-grado" class="text-xs font-bold text-rose-800 tracking-widest">0</span>
                             </div>
                         </div>
-                        <div id="modal-color-indicator" class="w-6 h-6 rounded-full shadow-inner border-2 border-stone-300"></div>
+                        <div id="modal-color-indicator" class="w-10 h-10 rounded-xl border-2 border-stone-100 shadow-sm"></div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mb-2">
+                    <div class="grid grid-cols-2 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-bold text-stone-700 mb-2">Nuevo Nivel (L)</label>
-                            <input type="number" id="input-level" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none text-xl font-black text-stone-800 text-center shadow-inner bg-stone-50">
+                            <label class="block text-[10px] font-black text-stone-500 uppercase mb-2">Nuevo Nivel (Litros)</label>
+                            <input type="number" id="input-level" class="w-full border-2 border-stone-200 p-4 rounded-2xl focus:border-rose-800 outline-none text-xl font-black text-center bg-white shadow-sm">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-stone-700 mb-2">Nuevo Grado (%)</label>
-                            <input type="number" step="0.01" id="input-grado" class="w-full border-2 border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none text-xl font-black text-stone-800 text-center shadow-inner bg-stone-50">
+                            <label class="block text-[10px] font-black text-stone-500 uppercase mb-2">Nuevo Grado/Baume</label>
+                            <input type="number" step="0.01" id="input-grado" class="w-full border-2 border-stone-200 p-4 rounded-2xl focus:border-rose-800 outline-none text-xl font-black text-center bg-white shadow-sm">
                         </div>
                     </div>
-                    <p id="modal-capacity-info" class="text-[11px] font-bold text-stone-500 mb-5 text-center bg-stone-200 py-1 rounded"></p>
 
-                    <div class="mb-6 border-t border-stone-200 pt-5">
-                        <label class="block text-sm font-bold text-stone-700 mb-2">Tipo de Movimiento</label>
-                        <select id="input-action" class="w-full border border-stone-300 p-3 rounded-xl mb-4 font-medium text-stone-700 bg-white focus:border-rose-800 outline-none">
-                            <option value="Ajuste">Ajuste de inventario/grado</option>
-                            <option value="Entrada">Entrada de vino / Mosto</option>
+                    <div class="mb-6">
+                        <label class="block text-[10px] font-black text-stone-500 uppercase mb-2 tracking-widest">Acción / Movimiento</label>
+                        <select id="input-action" class="w-full border-2 border-stone-200 p-4 rounded-2xl font-bold bg-white outline-none focus:border-rose-800">
+                            <option value="Inventario">Actualización de Inventario</option>
+                            <option value="Entrada">Entrada (Vino / Mosto)</option>
                             <option value="Trasiego">Salida / Trasiego</option>
-                            <option value="Envasado">Envasado / Embotellado</option>
-                            <option value="Limpieza">Vaciado total y Limpieza</option>
+                            <option value="Envasado">Envasado</option>
+                            <option value="Limpieza">Vaciado y Limpieza</option>
                         </select>
-
-                        <label class="block text-sm font-bold text-stone-700 mb-2">Notas (Opcional)</label>
-                        <textarea id="input-notes" placeholder="Ej: Trasiego al M-05..." class="w-full border border-stone-300 p-3 rounded-xl focus:border-rose-800 outline-none h-20 text-sm resize-none"></textarea>
                     </div>
 
-                    <button onclick="saveMovement()" id="btn-save" class="w-full bg-stone-900 hover:bg-black text-rose-400 font-bold text-lg py-4 px-4 rounded-xl shadow-xl transition-all flex justify-center items-center gap-2 border border-stone-700">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                        Añadir al Registro
+                    <div class="mb-6">
+                        <label class="block text-[10px] font-black text-stone-500 uppercase mb-2">Notas (Opcional)</label>
+                        <textarea id="input-notes" class="w-full border-2 border-stone-200 p-4 rounded-2xl font-bold h-20 text-sm outline-none focus:border-rose-800 bg-white" placeholder="Ej: Trasiego al depósito M-12..."></textarea>
+                    </div>
+
+                    <button onclick="saveMovement()" id="btn-save" class="w-full bg-stone-900 text-rose-500 font-black py-5 rounded-2xl shadow-xl active:scale-95 transition-all flex justify-center items-center gap-3 uppercase tracking-widest border border-stone-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Guardar Registro en BBDD
                     </button>
                 </div>
             </div>
@@ -201,43 +197,43 @@
 
     <script>
         // ==========================================
-        // CONFIGURACIÓN DE SUPABASE
+        // CONFIGURACIÓN SUPABASE (¡CON LA M ARREGLADA!)
         // ==========================================
         const { createClient } = supabase;
         const supabaseUrl = 'https://txkqgakiqwpmsxvvfhko.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4a3FnYWtpcXdwbXN4dnZmaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5NDMxMjAsImV4cCI6MjA5MzUxOTEyMH0.dwCLSUoM7R3zWNzOYMrmuzxmamCMc3XJq2sHMsFsf0A';
         const db = createClient(supabaseUrl, supabaseKey);
 
-        // ==========================================
-        // SISTEMA DE USUARIOS Y LOGIN
-        // ==========================================
         const usersDB = {
-            'jlgarcia': 'Lenovo291580',
-            'nponce': 'Lenovo801235',
-            'acortijo': 'Lenovo801231',
-            'cgordillo': 'Lenovo801245',
-            'jvergara': 'Lenovo801223',
-            'alavado': 'Lenovo801228',
-            'jmartin': 'Lenovo801224',
-            'jmvera': 'Lenovo801277'
+            'jlgarcia': 'Lenovo291580', 'nponce': 'Lenovo801235', 'acortijo': 'Lenovo801231',
+            'cgordillo': 'Lenovo801245', 'jvergara': 'Lenovo801223', 'alavado': 'Lenovo801228',
+            'jmartin': 'Lenovo801224', 'jmvera': 'Lenovo801277'
+        };
+
+        // COLORES DE TODOS LOS PRODUCTOS DE LA COOPERATIVA
+        const productTypes = {
+            'vino_tinto': { display: 'Vino Tinto', colorCode: 'bg-rose-900', textColor: 'text-rose-900' },
+            'vino_blanco': { display: 'Vino Blanco', colorCode: 'bg-amber-100', textColor: 'text-amber-700' },
+            'mosto_azufrado': { display: 'Mosto Azufrado', colorCode: 'bg-yellow-400', textColor: 'text-yellow-800' },
+            'lias': { display: 'Lías', colorCode: 'bg-orange-900', textColor: 'text-orange-900' },
+            'mosto_c': { display: 'Mosto Concentrado', colorCode: 'bg-amber-700', textColor: 'text-amber-900' }
         };
 
         let currentUser = localStorage.getItem('bodega_user') || null;
+        let depositsData = [];
+        let filteredData = [];
+        let currentView = 'grid';
+        let currentDepositId = null;
 
+        // LOGIN
         const checkLoginState = () => {
             if (currentUser) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
-                document.getElementById('display-user').innerText = currentUser;
-
-                // Mostrar botón de borrar historial solo a admins
-                const btnClearHistory = document.getElementById('btn-clear-history');
-                if (currentUser === 'jlgarcia' || currentUser === 'jmvera') {
-                    btnClearHistory.classList.remove('hidden');
-                } else {
-                    btnClearHistory.classList.add('hidden');
+                document.getElementById('display-user').innerText = currentUser.toUpperCase();
+                if (['jlgarcia', 'jmvera'].includes(currentUser)) {
+                    document.getElementById('btn-clear-history').classList.remove('hidden');
                 }
-
                 initApp(); 
             } else {
                 document.getElementById('login-screen').classList.remove('hidden');
@@ -246,135 +242,136 @@
         };
 
         const login = () => {
-            const user = document.getElementById('login-user').value.trim();
+            const user = document.getElementById('login-user').value.trim().toLowerCase();
             const pass = document.getElementById('login-pass').value.trim();
-            const errorMsg = document.getElementById('login-error');
-
-            if (usersDB[user] && usersDB[user] === pass) {
+            if (usersDB[user] === pass) {
                 currentUser = user;
                 localStorage.setItem('bodega_user', user);
-                errorMsg.classList.add('hidden');
-                document.getElementById('login-user').value = '';
-                document.getElementById('login-pass').value = '';
                 checkLoginState();
             } else {
-                errorMsg.classList.remove('hidden');
+                const err = document.getElementById('login-error');
+                err.classList.remove('hidden');
+                setTimeout(() => err.classList.add('hidden'), 3000);
             }
         };
 
         const logout = () => {
-            currentUser = null;
             localStorage.removeItem('bodega_user');
-            checkLoginState();
+            location.reload();
         };
 
         document.getElementById('login-pass').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') login();
         });
 
-        // ==========================================
-        // SISTEMA PRINCIPAL DE LA APP
-        // ==========================================
-        let currentDepositId = null;
-        let depositsData = [];
-        let filteredData = [];
-        let currentView = 'grid';
-
-        const productTypes = {
-            'vino_tinto': { display: 'Vino Tinto', colorCode: 'bg-rose-900', textColor: 'text-rose-900' },
-            'vino_blanco': { display: 'Vino Blanco', colorCode: 'bg-amber-100', textColor: 'text-amber-700' },
-            'mosto_azufrado': { display: 'Mosto Azufrado', colorCode: 'bg-yellow-300', textColor: 'text-yellow-700' },
-            'lias': { display: 'Lías', colorCode: 'bg-amber-900', textColor: 'text-amber-900' },
-            'mosto_c': { display: 'Mosto Concentrado', colorCode: 'bg-orange-600', textColor: 'text-orange-900' }
-        };
-
-        // DESCARGAR DATOS DESDE SUPABASE AL INICIAR
+        // DESCARGAR DATOS DESDE SUPABASE
         const initApp = async () => {
-            if (depositsData.length > 0) return; 
-
+            if(depositsData.length > 0) return;
             try {
-                // Descargar depósitos
-                const { data: tanks, error } = await db.from('depositos').select('*').order('id', { ascending: true });
-                
+                const { data, error } = await db.from('depositos').select('*').order('id', { ascending: true });
                 if (error) throw error;
-
-                if (!tanks || tanks.length === 0) {
-                    alert("¡Bienvenido a la aplicación! Sin embargo, la base de datos está vacía. Recuerda ejecutar el código SQL en Supabase para crear los 76 depósitos iniciales.");
-                    return;
-                }
-
-                tanks.forEach(tank => {
-                    const fillLevel = Math.min(100, Math.round((tank.cantidad_actual / tank.capacidad_total) * 100));
-                    depositsData.push({
-                        id: tank.id,
-                        name: tank.name,
-                        level: fillLevel,
-                        producto: tank.producto,
-                        cantidadActual: tank.cantidad_actual,
-                        capacidadTotal: tank.capacidad_total,
-                        grado: tank.grado
-                    });
-                });
-                
-                filteredData = [...depositsData];
-                applyFilters(); 
-                renderHistory(); // Carga el historial desde Supabase
+                depositsData = data.map(t => ({
+                    id: t.id, name: t.name, producto: t.producto,
+                    cantidadActual: t.cantidad_actual, capacidadTotal: t.capacidad_total, grado: t.grado,
+                    level: Math.min(100, Math.round((t.cantidad_actual / t.capacidad_total) * 100))
+                }));
+                applyFilters();
+                renderHistory();
             } catch (err) {
-                console.error(err);
-                alert("Error al conectar con Supabase. Detalles: " + err.message);
+                alert("Error al conectar. ¿Desactivaste el RLS en Supabase? " + err.message);
             }
         };
 
         const applyFilters = () => {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const filterType = document.getElementById('filter-select').value;
-            const showEmpty = document.getElementById('filter-empty').checked;
-
-            filteredData = depositsData.filter(dep => {
-                const matchesSearch = dep.name.toLowerCase().includes(searchTerm);
-                const matchesType = filterType === 'all' || dep.producto === filterType;
-                const matchesEmpty = showEmpty || dep.cantidadActual > 0;
-                
-                return matchesSearch && matchesType && matchesEmpty;
-            });
-
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const type = document.getElementById('filter-select').value;
+            const empty = document.getElementById('filter-empty').checked;
+            filteredData = depositsData.filter(d => 
+                d.name.toLowerCase().includes(search) &&
+                (type === 'all' || d.producto === type) &&
+                (empty || d.cantidadActual > 0)
+            );
             document.getElementById('no-results').classList.toggle('hidden', filteredData.length > 0);
-            
-            if (currentView === 'grid') renderGrid();
-            else if (currentView === 'list') renderList();
+            currentView === 'grid' ? renderGrid() : (currentView === 'list' ? renderList() : renderHistory());
         };
 
-        // ==========================================
-        // RENDERIZADO DE VISTAS (Grid, List, Historial)
-        // ==========================================
+        // EXPORTAR A EXCEL Y REGISTRAR EN EL LOG
+        const exportarExcel = async () => {
+            const btn = document.getElementById('btn-excel');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Generando...`;
+            
+            try {
+                // 1. Preparar datos para Excel
+                const dateObj = new Date();
+                const fechaCorta = dateObj.toLocaleDateString('es-ES').replace(/\//g, '-');
+                const hora = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute:'2-digit' }).replace(':', '');
+                const fileName = `Inventario_Estrella_${fechaCorta}_${hora}.xlsx`;
+
+                const dataExport = filteredData.map(dep => ({
+                    'Depósito': dep.name,
+                    'Producto': productTypes[dep.producto] ? productTypes[dep.producto].display : dep.producto,
+                    'Litros Actuales': dep.cantidadActual,
+                    'Capacidad (L)': dep.capacidadTotal,
+                    'Grado / Baume': dep.grado,
+                    '% Llenado': dep.level + '%'
+                }));
+
+                // Calcular totales para la última fila
+                const totalLitros = dataExport.reduce((sum, current) => sum + current['Litros Actuales'], 0);
+                dataExport.push({ 'Depósito': 'TOTAL', 'Producto': '-', 'Litros Actuales': totalLitros, 'Capacidad (L)': '-', 'Grado / Baume': '-', '% Llenado': '-' });
+
+                // 2. Generar archivo con SheetJS
+                const ws = XLSX.utils.json_to_sheet(dataExport);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+                XLSX.writeFile(wb, fileName);
+
+                // 3. Guardar el registro en la base de datos (Historial)
+                await db.from('historial').insert([{
+                    fecha: new Date().toLocaleString('es-ES'),
+                    usuario: currentUser,
+                    deposito: 'TODOS',
+                    producto: 'Excel',
+                    nivel_anterior: 0,
+                    nuevo_nivel: 0,
+                    grado_anterior: 0,
+                    nuevo_grado: 0,
+                    accion: 'Descarga Excel',
+                    notas: `Generó un archivo Excel con ${filteredData.length} depósitos (${totalLitros.toLocaleString()} L totales).`
+                }]);
+
+                renderHistory(); // Refrescar vista
+                btn.innerHTML = originalHTML;
+
+            } catch (err) {
+                alert("Hubo un error generando el Excel.");
+                btn.innerHTML = originalHTML;
+            }
+        };
+
         const renderGrid = () => {
             const grid = document.getElementById('view-grid');
             grid.innerHTML = '';
             filteredData.forEach(dep => {
-                const typeInfo = productTypes[dep.producto] || productTypes['vino_blanco']; // Por seguridad
-                const opacityClass = dep.cantidadActual === 0 ? 'opacity-20' : 'opacity-[0.85]';
-                
+                const type = productTypes[dep.producto] || productTypes['vino_blanco'];
+                const opacity = dep.cantidadActual === 0 ? 'opacity-20' : 'opacity-[0.85]';
                 const card = document.createElement('div');
-                card.className = "flex flex-col relative group";
+                card.className = "flex flex-col relative group cursor-pointer hover:scale-[1.02] transition-transform";
+                card.onclick = () => openModal(dep.id);
                 card.innerHTML = `
-                    <div onclick="openModal(${dep.id})" class="relative w-full h-[320px] cursor-pointer flex flex-col items-center mt-2 hover:scale-[1.02] transition-transform">
+                    <div class="relative w-full h-[320px] flex flex-col items-center mt-2">
                         <div class="w-11/12 h-8 stainless-steel rounded-t-[2rem] border border-stone-400 z-10 shadow-sm"></div>
                         <div class="w-full h-full relative border-x border-stone-300 overflow-hidden bg-stone-100/30 backdrop-blur-sm z-20">
-                            <div class="absolute inset-0 bg-gradient-to-r from-white/60 via-transparent to-black/10 z-30 pointer-events-none"></div>
-                            
-                            <div class="absolute bottom-0 left-0 w-full ${typeInfo.colorCode} ${opacityClass} liquid-shadow fill-level z-10 border-t border-white/20" style="height: 0%;" id="fill-${dep.id}"></div>
-                            
-                            <div class="absolute inset-0 flex flex-col items-center justify-center z-40 pointer-events-none p-4">
-                                <div class="glass-panel text-white p-3 rounded-lg shadow-xl w-full text-center border-t border-white/20">
+                            <div class="absolute bottom-0 left-0 w-full ${type.colorCode} ${opacity} liquid-shadow fill-level z-10 border-t border-white/20" style="height: ${dep.level}%"></div>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
+                                <div class="glass-panel text-white p-3 rounded-lg shadow-xl w-full text-center">
                                     <div class="flex justify-between items-center border-b border-stone-400/30 pb-1 mb-1">
-                                        <h3 class="font-black text-sm tracking-widest text-stone-100">${dep.name}</h3>
-                                        <span class="text-[10px] font-bold text-amber-300 bg-stone-900/50 px-1.5 py-0.5 rounded">${dep.grado}% Vol.</span>
+                                        <h3 class="font-black text-sm tracking-widest">${dep.name}</h3>
+                                        <span class="text-[10px] font-bold text-amber-300 bg-stone-900/50 px-1.5 py-0.5 rounded">${dep.grado}</span>
                                     </div>
-                                    <p class="font-bold text-2xl leading-none text-white mt-2">${dep.cantidadActual.toLocaleString('es-ES')}<span class="text-xs font-normal text-stone-300 ml-1">L</span></p>
-                                    <div class="w-full bg-stone-900/60 rounded-full h-1 mt-2 overflow-hidden shadow-inner">
-                                        <div class="bg-white h-1 rounded-full" style="width: ${dep.level}%"></div>
-                                    </div>
-                                    <p class="text-[9px] text-stone-300 font-bold mt-1 uppercase tracking-wider">${dep.cantidadActual === 0 ? 'VACÍO' : typeInfo.display}</p>
+                                    <p class="font-bold text-xl leading-none mt-2">${dep.cantidadActual.toLocaleString()}<span class="text-[10px] ml-1 font-normal">L</span></p>
+                                    <p class="text-[8px] text-stone-300 font-bold mt-1 uppercase tracking-wider">${dep.cantidadActual === 0 ? 'VACÍO' : type.display}</p>
                                 </div>
                             </div>
                         </div>
@@ -382,230 +379,154 @@
                     </div>
                 `;
                 grid.appendChild(card);
-                setTimeout(() => { 
-                    const el = document.getElementById(`fill-${dep.id}`);
-                    if(el) el.style.height = `${dep.level}%`; 
-                }, 50);
             });
         };
 
         const renderList = () => {
-            const listContainer = document.getElementById('view-list');
-            listContainer.innerHTML = '';
+            const list = document.getElementById('view-list');
+            list.innerHTML = '';
             filteredData.forEach(dep => {
-                const typeInfo = productTypes[dep.producto] || productTypes['vino_blanco'];
-                let progressColor = dep.level > 85 ? 'bg-red-500' : (dep.level > 20 ? 'bg-rose-500' : 'bg-amber-500');
-                if (dep.producto === 'vino_blanco' && dep.level <= 85) progressColor = 'bg-lime-500';
-                
-                const bgIndicator = dep.cantidadActual === 0 ? 'bg-stone-300' : typeInfo.colorCode;
-
-                const item = document.createElement('div');
-                item.className = "bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors";
-                item.onclick = () => openModal(dep.id);
-                item.innerHTML = `
-                    <div class="flex items-center gap-4 flex-grow">
-                        <div class="w-4 h-14 rounded-full ${bgIndicator} border border-stone-300 shadow-inner flex-shrink-0"></div>
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-center mb-1">
-                                <h3 class="font-black text-lg text-stone-800 leading-none">${dep.name}</h3>
-                                <span class="text-[10px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">${dep.grado}% Vol.</span>
-                            </div>
-                            <div class="flex justify-between items-end mt-1">
-                                <p class="text-xl font-bold text-stone-600">${dep.cantidadActual.toLocaleString('es-ES')} <span class="text-xs font-normal">L</span></p>
-                                <span class="font-bold text-[10px] ${dep.cantidadActual === 0 ? 'text-stone-400' : typeInfo.textColor} uppercase bg-stone-50 px-1 rounded">${dep.cantidadActual === 0 ? 'VACÍO' : typeInfo.display}</span>
-                            </div>
-                            <div class="w-full bg-stone-100 rounded-full h-1.5 mt-2 overflow-hidden shadow-inner">
-                                <div class="${progressColor} h-1.5 rounded-full" style="width: ${dep.level}%"></div>
-                            </div>
+                const type = productTypes[dep.producto] || productTypes['vino_blanco'];
+                const bgIndicator = dep.cantidadActual === 0 ? 'bg-stone-200' : type.colorCode;
+                const row = document.createElement('div');
+                row.className = "bg-white p-4 rounded-xl border border-stone-200 flex items-center gap-4 shadow-sm active:bg-stone-50 cursor-pointer";
+                row.onclick = () => openModal(dep.id);
+                row.innerHTML = `
+                    <div class="w-4 h-12 rounded-full ${bgIndicator} border border-stone-300 flex-shrink-0"></div>
+                    <div class="flex-grow flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-black text-stone-800">${dep.name}</p>
+                            <p class="text-[10px] font-bold ${type.textColor} uppercase tracking-widest">${dep.cantidadActual === 0 ? 'Vacío' : type.display}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-black text-stone-700">${dep.cantidadActual.toLocaleString()} L</p>
+                            <span class="text-[10px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">${dep.grado} G/B</span>
                         </div>
                     </div>
                 `;
-                listContainer.appendChild(item);
+                list.appendChild(row);
             });
         };
 
-        // RENDERIZAR HISTORIAL DESDE SUPABASE
         const renderHistory = async () => {
             const container = document.getElementById('history-list');
-            container.innerHTML = `<p class="text-center text-stone-400 py-6">Cargando movimientos...</p>`;
+            const { data, error } = await db.from('historial').select('*').order('id', { ascending: false }).limit(60);
+            if (error) return;
+            container.innerHTML = '';
             
-            try {
-                // Descargar historial (los últimos 100 movimientos)
-                const { data: appHistory, error } = await db.from('historial').select('*').order('id', { ascending: false }).limit(100);
-
-                if (error) throw error;
-
-                if (!appHistory || appHistory.length === 0) {
-                    container.innerHTML = `<p class="text-center text-stone-400 py-6">No hay movimientos registrados en la base de datos.</p>`;
-                    return;
-                }
-
-                container.innerHTML = '';
-                appHistory.forEach(record => {
-                    const item = document.createElement('div');
-                    item.className = "bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex flex-col gap-2";
+            data.forEach(h => {
+                const item = document.createElement('div');
+                
+                // Diseño especial si es un registro de Excel
+                if (h.accion === 'Descarga Excel') {
+                    item.className = "bg-emerald-50 p-3 rounded-xl border border-emerald-200 shadow-sm flex flex-col gap-1";
                     item.innerHTML = `
-                        <div class="flex justify-between items-center border-b border-stone-100 pb-2">
-                            <span class="text-xs font-bold text-stone-400">${record.fecha}</span>
-                            <span class="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded border border-stone-200 uppercase">👤 ${record.usuario}</span>
-                        </div>
                         <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-2">
-                                <h4 class="font-black text-lg text-rose-800">${record.deposito}</h4>
-                                <span class="text-[10px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded">${record.accion}</span>
-                            </div>
+                            <span class="text-[10px] font-bold text-emerald-600">${h.fecha}</span>
+                            <span class="text-[10px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded uppercase">👤 ${h.usuario}</span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 mt-1">
-                            <div class="bg-stone-50 p-2 rounded border border-stone-100">
-                                <p class="text-[10px] text-stone-500 font-bold uppercase">Litros</p>
-                                <p class="text-sm font-bold text-stone-700">${record.nivel_anterior.toLocaleString('es-ES')} ➔ <span class="text-rose-600">${record.nuevo_nivel.toLocaleString('es-ES')}</span></p>
-                            </div>
-                            <div class="bg-stone-50 p-2 rounded border border-stone-100">
-                                <p class="text-[10px] text-stone-500 font-bold uppercase">Grado</p>
-                                <p class="text-sm font-bold text-stone-700">${record.grado_anterior} ➔ <span class="text-rose-600">${record.nuevo_grado}</span></p>
-                            </div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <p class="font-black text-sm text-emerald-900">Documento Excel Generado</p>
                         </div>
-                        ${record.notas ? `<p class="text-xs text-stone-500 mt-1 italic">"${record.notas}"</p>` : ''}
+                        <p class="text-xs text-emerald-700 font-bold italic mt-1">${h.notas}</p>
                     `;
-                    container.appendChild(item);
-                });
-            } catch (err) {
-                container.innerHTML = `<p class="text-center text-red-500 py-6">Error cargando historial: ${err.message}</p>`;
-            }
-        };
-
-        const clearHistory = async () => {
-            if(confirm("ATENCIÓN ADMIN: ¿Estás seguro de borrar todo el historial en la Base de Datos? Esta acción no se puede deshacer y afectará a todos los operarios.")) {
-                try {
-                    const { error } = await db.from('historial').delete().neq('id', 0); 
-                    if(error) throw error;
-                    
-                    alert("Historial borrado con éxito de la base de datos.");
-                    renderHistory();
-                } catch (err) {
-                    alert("Error al borrar historial: " + err.message);
+                } else {
+                    // Diseño normal de depósitos
+                    item.className = "bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col gap-1";
+                    item.innerHTML = `
+                        <div class="flex justify-between items-center border-b border-stone-50 pb-1">
+                            <span class="text-[10px] font-bold text-stone-400">${h.fecha}</span>
+                            <span class="text-[9px] font-black bg-stone-100 text-stone-600 px-2 py-0.5 rounded uppercase border border-stone-200">👤 ${h.usuario}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-black text-sm text-rose-800">${h.deposito}</h4>
+                                <span class="text-[9px] font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded">${h.accion}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 mt-1">
+                            <p class="text-[11px] font-bold text-stone-600">Vol: ${h.nivel_anterior.toLocaleString()} ➔ <span class="text-rose-600">${h.nuevo_nivel.toLocaleString()} L</span></p>
+                            <p class="text-[11px] font-bold text-stone-600">G: ${h.grado_anterior} ➔ <span class="text-rose-600">${h.nuevo_grado}</span></p>
+                        </div>
+                        ${h.notas ? `<p class="text-[10px] text-stone-400 italic mt-1 bg-stone-50 p-1 rounded">"${h.notas}"</p>` : ''}
+                    `;
                 }
-            }
+                container.appendChild(item);
+            });
         };
 
-        const setView = (viewType) => {
-            currentView = viewType;
-            const btnGrid = document.getElementById('btn-grid');
-            const btnList = document.getElementById('btn-list');
-            const btnHist = document.getElementById('btn-history');
-            const viewGrid = document.getElementById('view-grid');
-            const viewList = document.getElementById('view-list');
-            const viewHist = document.getElementById('view-history');
-            const searchBox = document.getElementById('search-container');
-
-            [btnGrid, btnList, btnHist].forEach(btn => btn.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-md text-stone-400 hover:text-white transition-colors flex justify-center items-center gap-1 md:gap-2");
-            viewGrid.classList.add('hidden');
-            viewList.classList.add('hidden');
-            viewHist.classList.add('hidden');
-
-            const activeClass = "flex-1 py-2 text-xs md:text-sm font-bold rounded-md bg-stone-600 text-white shadow transition-colors flex justify-center items-center gap-1 md:gap-2";
-
-            if (viewType === 'grid') {
-                btnGrid.className = activeClass;
-                viewGrid.classList.remove('hidden');
-                searchBox.classList.remove('hidden');
-                renderGrid();
-            } else if (viewType === 'list') {
-                btnList.className = activeClass;
-                viewList.classList.remove('hidden');
-                searchBox.classList.remove('hidden');
-                renderList();
-            } else if (viewType === 'history') {
-                btnHist.className = activeClass;
-                viewHist.classList.remove('hidden');
-                searchBox.classList.add('hidden'); 
-                renderHistory();
-            }
-        };
-
-        const openModal = (depId) => {
-            currentDepositId = depId;
-            const deposit = depositsData.find(d => d.id === depId);
-            const typeInfo = productTypes[deposit.producto] || productTypes['vino_blanco'];
-
-            document.getElementById('modal-title').innerText = deposit.name;
-            document.getElementById('modal-subtitle').innerText = deposit.cantidadActual === 0 ? 'Depósito Vacío' : typeInfo.display;
-            document.getElementById('modal-current-level').innerText = `${deposit.cantidadActual.toLocaleString('es-ES')} L`;
-            document.getElementById('modal-current-grado').innerText = `(${deposit.grado}% Vol.)`;
+        const openModal = (id) => {
+            currentDepositId = id;
+            const dep = depositsData.find(d => d.id === id);
+            const type = productTypes[dep.producto] || productTypes['vino_blanco'];
             
-            document.getElementById('modal-color-indicator').className = `w-6 h-6 rounded-full ${deposit.cantidadActual === 0 ? 'bg-stone-300' : typeInfo.colorCode} shadow-inner border-2 border-stone-300`;
-            
-            document.getElementById('input-level').value = deposit.cantidadActual;
-            document.getElementById('input-grado').value = deposit.grado;
-            document.getElementById('modal-capacity-info').innerText = `Capacidad Máxima: ${deposit.capacidadTotal.toLocaleString('es-ES')} L`;
+            document.getElementById('modal-title').innerText = dep.name;
+            document.getElementById('modal-subtitle').innerText = dep.cantidadActual === 0 ? 'Vaciado' : type.display;
+            document.getElementById('modal-current-level').innerText = dep.cantidadActual.toLocaleString() + ' L';
+            document.getElementById('modal-current-grado').innerText = dep.grado;
+            document.getElementById('modal-color-indicator').className = `w-10 h-10 rounded-xl shadow-inner border-2 border-stone-200 ${dep.cantidadActual === 0 ? 'bg-stone-200' : type.colorCode}`;
+            document.getElementById('input-level').value = dep.cantidadActual;
+            document.getElementById('input-grado').value = dep.grado;
             document.getElementById('input-notes').value = '';
-
             document.getElementById('edit-modal').classList.remove('hidden');
         };
 
         const closeModal = () => document.getElementById('edit-modal').classList.add('hidden');
 
-        // ==========================================
-        // SUBIR DATOS A SUPABASE
-        // ==========================================
+        const setView = (v) => {
+            currentView = v;
+            ['grid', 'list', 'history'].forEach(x => {
+                document.getElementById('view-'+x).classList.toggle('hidden', x !== v);
+                document.getElementById('btn-'+x).classList.toggle('bg-stone-600', x === v);
+                document.getElementById('btn-'+x).classList.toggle('text-white', x === v);
+            });
+            document.getElementById('search-container').classList.toggle('hidden', v === 'history');
+        };
+
         const saveMovement = async () => {
             const btn = document.getElementById('btn-save');
-            const originalText = btn.innerHTML;
-            
-            const deposit = depositsData.find(d => d.id === currentDepositId);
-            const newLevel = parseInt(document.getElementById('input-level').value) || 0;
-            const newGrado = parseFloat(document.getElementById('input-grado').value) || 0;
-            const action = document.getElementById('input-action').value;
-            const notes = document.getElementById('input-notes').value;
-            
-            if(newLevel > deposit.capacidadTotal) {
-                alert(`El nivel (${newLevel.toLocaleString('es-ES')} L) supera la capacidad del depósito (${deposit.capacidadTotal.toLocaleString('es-ES')} L)`);
-                return;
-            }
-            
-            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-rose-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Registrando en BBDD...`;
-            
+            const dep = depositsData.find(d => d.id === currentDepositId);
+            const newL = parseInt(document.getElementById('input-level').value) || 0;
+            const newG = parseFloat(document.getElementById('input-grado').value) || 0;
+            const act = document.getElementById('input-action').value;
+            const nts = document.getElementById('input-notes').value;
+
+            if (newL > dep.capacidadTotal) { alert("¡Exceso de capacidad!"); return; }
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Guardando...`;
+
             try {
-                // 1. ACTUALIZAR EL DEPÓSITO EN SUPABASE
-                const { error: err1 } = await db.from('depositos')
-                    .update({ cantidad_actual: newLevel, grado: newGrado })
-                    .eq('id', deposit.id);
-                if(err1) throw err1;
-
-                // 2. AÑADIR AL HISTORIAL DE SUPABASE
-                const { error: err2 } = await db.from('historial').insert([{
-                    fecha: new Date().toLocaleString('es-ES'),
-                    usuario: currentUser,
-                    deposito: deposit.name,
-                    producto: productTypes[deposit.producto] ? productTypes[deposit.producto].display : deposit.producto,
-                    nivel_anterior: deposit.cantidadActual,
-                    nuevo_nivel: newLevel,
-                    grado_anterior: deposit.grado,
-                    nuevo_grado: newGrado,
-                    accion: action,
-                    notas: notes
+                // Actualizar depósito
+                const { error: e1 } = await db.from('depositos').update({ cantidad_actual: newL, grado: newG }).eq('id', dep.id);
+                if (e1) throw e1;
+                
+                // Añadir log
+                const { error: e2 } = await db.from('historial').insert([{
+                    fecha: new Date().toLocaleString('es-ES'), usuario: currentUser,
+                    deposito: dep.name, producto: productTypes[dep.producto] ? productTypes[dep.producto].display : dep.producto,
+                    nivel_anterior: dep.cantidadActual, nuevo_nivel: newL,
+                    grado_anterior: dep.grado, nuevo_grado: newG, accion: act, notas: nts
                 }]);
-                if(err2) throw err2;
+                if (e2) throw e2;
 
-                // 3. ACTUALIZAR LA INTERFAZ LOCAL
-                deposit.cantidadActual = newLevel;
-                deposit.grado = newGrado;
-                deposit.level = Math.min(100, Math.round((newLevel / deposit.capacidadTotal) * 100));
+                // Actualizar UI local
+                dep.cantidadActual = newL; dep.grado = newG;
+                dep.level = Math.min(100, Math.round((newL / dep.capacidadTotal) * 100));
                 
-                applyFilters(); 
-                renderHistory(); // Actualizar el historial para que se vea el nuevo movimiento
-                
-                btn.innerHTML = `<svg class="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ¡Registrado!`;
-                
-                setTimeout(() => {
-                    closeModal();
-                    btn.innerHTML = originalText;
-                }, 1000);
+                applyFilters();
+                closeModal();
+                btn.innerHTML = originalHTML;
+            } catch (e) {
+                alert("Error al conectar con la base de datos.");
+                btn.innerHTML = originalHTML;
+            }
+        };
 
-            } catch (error) {
-                console.error("Error al guardar:", error);
-                alert("Error al conectar con la base de datos: " + error.message);
-                btn.innerHTML = originalText;
+        const clearHistory = async () => {
+            if (confirm("ATENCIÓN: ¿Borrar todo el historial y los registros de Excel en la BBDD?")) {
+                await db.from('historial').delete().neq('id', 0);
+                renderHistory();
             }
         };
 
